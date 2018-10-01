@@ -1200,31 +1200,58 @@ Translations of the guide are available in the following languages:
     end
     ```
 
-  * <a name="no-and-or-or"></a>
-    The `and` and `or` keywords are banned. The minimal added readability is just
-    not worth the high probability of introducing subtle bugs. For boolean
-    expressions, always use `&&` and `||` instead. For flow control, use
-    `if` and `unless`; `&&` and `||` are also acceptable but less clear.
-    <sup>[[link](#no-and-or-or)]</sup>
+  * <a name="no-and-or-or"></a><a name="and-or-flow"></a>
+    Distinguish between `&&`/`||` logical operators and `and`/`or` control flow
+    operators. `and` and `or` have very low precedence, and should only be used
+    as a final fallback statements.
+    <sup>[[link](#and-or-flow)]</sup>
 
     ```ruby
     # bad
-    # boolean expression
-    ok = got_needed_arguments and arguments_are_valid
-
-    # control flow
-    document.save or raise("Failed to save document!")
+    # in conditions
+    if got_needed_arguments and arguments_valid
+      # ...body omitted
+    end
+    # in logical expression calculation
+    ok = got_needed_arguments and arguments_valid
 
     # good
-    # boolean expression
-    ok = got_needed_arguments && arguments_are_valid
+    # in conditions
+    if got_needed_arguments && arguments_valid
+      # ...body omitted
+    end
+    # in logical expression calculation
+    ok = got_needed_arguments && arguments_valid
 
-    # control flow
-    raise("Failed to save document!") unless document.save
+    # bad
+    # control flow (can lead to very surprising results)
+    x = extract_arguments || raise(ArgumentError, "Not enough arguments!")
 
-    # ok
-    # control flow
-    document.save || raise("Failed to save document!")
+    # good
+    x = extract_arguments or raise ArgumentError, "Not enough arguments!"
+    ```
+
+    But avoid several control flow operators in one expression, that becomes
+    confusing:
+
+    ```ruby
+    # bad
+    # Did author mean conditional return because `#log` could result in `nil`?
+    # ...or was it just to have a smart one-liner?
+    x = extract_arguments and log("extracted") and return
+
+    # good
+    # If the intention was conditional return
+    x = extract_arguments
+    if x
+      return if log("extracted")
+    end
+    # If the intention was just "log, then return"
+    x = extract_arguments
+    if x
+      log("extracted")
+      return
+    end
     ```
 
   * <a name="no-multiline-ternary"></a>
